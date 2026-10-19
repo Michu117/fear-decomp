@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.fhport.app'
+    compileSdk 37
+
+    defaultConfig {
+        applicationId "com.fhport.app"
+        minSdk 26
+        targetSdk 37
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    // WebViewAssetLoader: sirve el juego por https://appassets.androidplatform.net
+    // (origin estable → localStorage de los saves funciona)
+    implementation 'androidx.webkit:webkit:1.14.0'
+    // DocumentFile: navegar el árbol SAF que el jugador selecciona
+    implementation 'androidx.documentfile:documentfile:1.1.0'
+}

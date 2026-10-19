@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="disc" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#251e30"/>
+      <stop offset="58%" stop-color="#16111f"/>
+      <stop offset="100%" stop-color="#0a0811"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#6d4c2d"/>
+      <stop offset="45%" stop-color="#4b3321"/>
+      <stop offset="100%" stop-color="#221610"/>
+    </linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#525863"/>
+      <stop offset="100%" stop-color="#23262d"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0%" stop-color="#ff8a1e" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ff8a1e" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="b20" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="20"/></filter>
+  </defs>
+  <circle cx="512" cy="512" r="300" fill="url(#disc)" stroke="#453a52" stroke-width="6"/>
+  <circle cx="512" cy="512" r="285" fill="none" stroke="#7a5a3a" stroke-width="3" opacity="0.35"/>
+  <circle cx="512" cy="395" r="172" fill="url(#glow)"/>
+  <path d="M512,232 C564,286 588,340 578,386 C568,432 542,456 512,456 C478,456 450,428 446,384 C441,336 468,286 512,232 Z" fill="#ff7b1c"/>
+  <path d="M512,284 C550,330 566,368 558,402 C550,436 533,454 512,454 C488,454 469,436 465,404 C460,368 482,330 512,284 Z" fill="#ffb52e"/>
+  <path d="M512,336 C538,368 548,396 542,418 C536,440 524,452 512,452 C497,452 486,441 482,420 C477,396 491,368 512,336 Z" fill="#ffe27a"/>
+  <path d="M512,384 C527,404 532,422 528,434 C524,445 518,452 512,452 C504,452 499,445 496,435 C492,421 499,403 512,384 Z" fill="#fff3c4"/>
+  <circle cx="536" cy="286" r="7" fill="#ffcf6b"/>
+  <circle cx="487" cy="264" r="5" fill="#ffcf6b" opacity="0.85"/>
+  <circle cx="561" cy="330" r="4.5" fill="#ffcf6b" opacity="0.8"/>
+  <rect x="468" y="446" width="88" height="17" rx="7" fill="#5a616c"/>
+  <path d="M476,461 L548,461 L536,517 L488,517 Z" fill="url(#metal)" stroke="#181a1f" stroke-width="4"/>
+  <rect x="491" y="510" width="42" height="200" rx="12" fill="url(#wood)"/>
+  <rect x="486" y="566" width="52" height="15" rx="6" fill="#170f09"/>
+  <rect x="486" y="602" width="52" height="15" rx="6" fill="#170f09"/>
+  <rect x="486" y="638" width="52" height="15" rx="6" fill="#170f09"/>
+</svg>

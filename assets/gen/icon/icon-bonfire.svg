@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <radialGradient id="disc" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#251e30"/>
+      <stop offset="58%" stop-color="#16111f"/>
+      <stop offset="100%" stop-color="#0a0811"/>
+    </radialGradient>
+    <linearGradient id="wood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#6d4c2d"/>
+      <stop offset="50%" stop-color="#4b3321"/>
+      <stop offset="100%" stop-color="#221610"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0%" stop-color="#ff8a1e" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ff8a1e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <circle cx="512" cy="512" r="300" fill="url(#disc)" stroke="#453a52" stroke-width="6"/>
+  <circle cx="512" cy="512" r="285" fill="none" stroke="#7a5a3a" stroke-width="3" opacity="0.35"/>
+  <circle cx="512" cy="450" r="215" fill="url(#glow)"/>
+  <path d="M418,348 C444,394 455,434 448,468 C441,504 428,560 409,560 C390,560 378,504 375,470 C372,436 392,394 418,348 Z" fill="#ff8c24" opacity="0.92"/>
+  <path d="M606,360 C584,404 575,442 582,474 C589,508 601,560 616,560 C633,560 644,508 646,476 C649,444 630,404 606,360 Z" fill="#ff8c24" opacity="0.92"/>
+  <path d="M512,250 C560,320 582,384 574,440 C566,494 542,554 512,554 C482,554 458,494 452,442 C445,384 468,320 512,250 Z" fill="#ff7b1c"/>
+  <path d="M512,336 C548,390 560,436 553,476 C546,514 530,548 512,548 C492,548 478,514 474,478 C469,438 486,390 512,336 Z" fill="#ffb52e"/>
+  <path d="M512,396 C532,430 539,460 534,484 C529,506 521,528 512,528 C503,528 495,508 491,486 C486,462 496,430 512,396 Z" fill="#fff0b0"/>
+  <rect x="360" y="556" width="304" height="46" rx="20" transform="rotate(-13 512 579)" fill="url(#wood)" stroke="#14100c" stroke-width="4"/>
+  <rect x="360" y="556" width="304" height="46" rx="20" transform="rotate(13 512 579)" fill="url(#wood)" stroke="#14100c" stroke-width="4"/>
+  <ellipse cx="512" cy="640" rx="140" ry="30" fill="#171009"/>
+  <circle cx="452" cy="640" r="7" fill="#ff6a1c"/>
+  <circle cx="512" cy="648" r="8" fill="#ff9a2c"/>
+  <circle cx="574" cy="638" r="6" fill="#ff6a1c"/>
+</svg>

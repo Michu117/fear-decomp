@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo del icono adaptivo (capa trasera) -->
+    <color name="ic_launcher_background">#0E0C12</color>
+</resources>

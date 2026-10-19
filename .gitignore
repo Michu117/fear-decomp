@@ -1,0 +1,49 @@
+# ============================================================
+#  NUNCA se sube: archivos del juego (copia personal del usuario)
+# ============================================================
+Fear & Hunger/
+Fear & Hunger.zip
+__MACOSX/
+
+# ============================================================
+#  Datos personales / saves
+# ============================================================
+poc/save/
+*.rpgsave
+
+# ============================================================
+#  Derivados de archivos del juego (no redistribuibles)
+# ============================================================
+poc/index.html
+
+# Enlaces simbólicos locales del PoC hacia la copia del juego
+# (existen en el equipo del desarrollador; no se versionan)
+poc/audio
+poc/data
+poc/fonts
+poc/icon
+poc/img
+poc/js
+poc/js_copies
+poc/movies
+poc/package.json
+
+# ============================================================
+#  Build de Android (reproducible desde el código)
+# ============================================================
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+
+# ============================================================
+#  Tooling local de agentes (no forma parte del proyecto)
+# ============================================================
+.agents/
+skills-lock.json
+
+# ============================================================
+#  Varios
+# ============================================================
+*.log
+.DS_Store
