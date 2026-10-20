@@ -16,10 +16,11 @@
 ## English
 
 ### What you get
-- **Touch controls**: D-pad + A (interact/confirm) + B (cancel) + ≡ (menu) +
-  a **torch button** (the PC `T` key).
-- **In-game settings menu (⚙)**: FPS cap 30/60, live FPS counter, show/hide the torch
-  button, **reposition every control** by dragging (saved) + reset to defaults.
+- **Touch controls**: D-pad **or joystick** + A (interact/confirm) + B (cancel) + ≡ (menu) +
+  a **torch button** (the PC `T` key) + a **Shift button** (the PC `Shift` key — hold to run).
+- **In-game settings menu (⚙)**: FPS cap 30/60, live FPS counter, show/hide torch and Shift
+  buttons, **button size** slider (75–150%), **D-pad mode: arrows or joystick**,
+  **reposition every control** by dragging (saved) + reset to defaults.
 - **Performance mode**: 30 FPS cap + half-resolution light/fog filters by default
   (smooth on mid-range phones); switch to 60 FPS in the menu.
 - **Saves on your device only** — imported once into the app's private storage.
@@ -32,7 +33,7 @@
 - ~1 GB of free storage (the copy is extracted into private app storage).
 
 ### Install
-1. Download `fh-android-port-v1.0.0.apk` from the **Releases** page.
+1. Download `fh-android-port-v1.1.0.apk` from the **Releases** page.
 2. Open it and allow "install from unknown apps" for your browser/file manager
    if Android asks.
 3. Launch **Fear & Hunger** from your launcher (icon: a torch on a dark background).
@@ -99,10 +100,12 @@ developer.
 ## Español
 
 ### Qué obtienes
-- **Controles táctiles**: D-pad + A (interactuar/confirmar) + B (cancelar) + ≡ (menú) +
-  **botón de antorcha** (la tecla `T` del PC).
+- **Controles táctiles**: D-pad **o joystick** + A (interactuar/confirmar) + B (cancelar) +
+  ≡ (menú) + **botón de antorcha** (la tecla `T` del PC) + **botón Shift** (la tecla
+  `Shift` del PC — mantener pulsado para correr).
 - **Menú de ajustes dentro del juego (⚙)**: límite de FPS 30/60, contador de FPS en
-  vivo, mostrar/ocultar el botón de antorcha, **reposicionar cada control** arrastrando
+  vivo, mostrar/ocultar antorcha y Shift, **tamaño de botones** (75–150%),
+  **D-pad: flechas o joystick**, **reposicionar cada control** arrastrando
   (se guarda) + restablecer valores por defecto.
 - **Modo rendimiento**: límite de 30 FPS + filtros de luz/niebla a media resolución por
   defecto (fluido en gama media); cambia a 60 FPS desde el menú.
@@ -117,7 +120,7 @@ developer.
 - ~1 GB de espacio libre (la copia se extrae al almacenamiento privado de la app).
 
 ### Instalación
-1. Descarga `fh-android-port-v1.0.0.apk` desde la página de **Releases**.
+1. Descarga `fh-android-port-v1.1.0.apk` desde la página de **Releases**.
 2. Ábrelo y permite "instalar apps de orígenes desconocidos" para tu navegador o
    gestor de archivos si Android lo pide.
 3. Lanza **Fear & Hunger** desde tu cajón de aplicaciones (icono: antorcha sobre

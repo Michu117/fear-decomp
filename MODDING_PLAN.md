@@ -334,3 +334,57 @@ iniciada: `audioHardwareBufferSize = 4360`).
   con el usuario jugando, las pruebas por CDP pueden perder el forward tras
   reinstalar/rotar — re-hacer `adb forward` con el PID actual; (3) el botón antorcha no
   marca `.fh-tbtn` con texto sino SVG → usar `currentColor` y no `textContent`.
+
+## 14. Fase 7 — Shift + tamaño de botones + D-pad joystick (v1.1.0)
+
+Pedido del usuario (propuesta aprobada): botón Shift (mecánica importante),
+redimensionar botones y alternar D-pad tipo flechas / tipo joystick.
+
+### Recon de Shift (previo, decide el canal)
+- `Input._onKeyDown` (`rpg_core.js:3234`) no filtra: cualquier `keydown` con
+  `keyCode 16` → `keyMapper[16]='shift'` (default MV, reforzado por
+  `AS_InputSettings`/`YEP_KeyboardConfig`) → `_currentState['shift']=true`.
+- Consumidores: `Game_Player.isDashButtonPressed` (`rpg_objects.js:7693`, correr),
+  `TDDP_ManageDashing.js:108`, `rpg_windows.js` (confirm/scroll),
+  `YEP_Options` (×10). **Nadie lee `event.shiftKey`** → el evento sintético basta.
+- No hay scripts de eventos en `data/Map*.json` usando `'shift'` → no hay segundo
+  canal oculto; todo pasa por `Input`.
+
+### Implementación (todo en `android-touch.js`, cero Java)
+- **Shift** (`G.sh`, grupo `sh`): keyCode 16, semántica de hold idéntica a la
+  antorcha (patrón ya probado). Icono SVG flecha+barra (`currentColor`). Por
+  defecto a la izquierda de la antorcha. Menú: "Botón Shift" Sí/No (`#fh-shsw`,
+  `st.shift`, default ON), `applyShVis` después de DEF/applyPos igual que la antorcha.
+- **Tamaño** (75–150%, paso 5): variable CSS `--fh-sz` en `#fh-touch`; TODOS los
+  tamaños fuentes de los inline styles pasan a `calc(<size>*var(--fh-sz,1))` (y
+  las posiciones relativas del D-pad y los anclajes de la fila B/antorcha/Shift y
+  del ≡ también escalan, para que a150% no se solapen). Slider en menú
+  (`#fh-szr` + etiqueta `#fh-szl`), persiste `st.sz`. `applySize` re-ancla con
+  `applyPos` (clamp) tras cada cambio. **Elegimos `calc()` en vez de
+  `transform:scale`**: el área de toque = área visual y el arrastre no necesita
+  dividir deltas por la escala (evita el bug de drift en modo edición).
+- **Joystick** (`#fh-joy` dentro de `G.dpad`, hermano de `#fh-arrows`): alterna
+  `display` según `st.dpad` ('flechas' | 'joy') compartiendo posición guardada,
+  unidad de arrastre y outline de edición. Knob al40% siguiendo al dedo
+  (clamped a62% del radio), zona muerta22%, soltar <15% (histéresis),8 sectores
+  de45° con12° de holgura de cambio; diagonal =2 teclas simultáneas (MV soporta
+ 8-direcciones). Usa los MISMOS `press/release` que las flechas → mismo canal
+  sintético. `pointerup/cancel/lostpointercapture` → `joyReleaseAll()` (nunca
+  flecha pegada); también al cambiar de modo y en reset.
+- **Menú**: +3 filas (Shift, slider tamaño, dirección) → el panel creció más allá
+  de los452 px CSS del viewport apaisado → `.fh-panel` ahora `max-height:94%;
+  overflow-y:auto` con `touch-action:pan-y` (quito `touch-action:none` del
+  `#fh-menu`, que bloqueaba el scroll táctil por intersección con ancestros).
+- **Reset** ampliado a "Restablecer controles": posiciones + tamaño100% + modo
+  flechas; los toggles de features (FPS, contador, antorcha/Shift visibles) no se
+  tocan.
+- **Persistencia**: `fhset_v1` += `shift`, `sz`, `dpad` con defaults → la config
+  v1.0.0 del usuario (cap60, contador ON) carga sin cambios.
+
+### Estado
+- Implementado y compilado (versionCode 2 / versionName 1.1.0). Sintaxis OK
+  (`node --check`).
+- **Pendiente**: verificación en el Galaxy A56 (el usuario conecta el teléfono
+  cuando pueda): Shift por CDP (`Input.isPressed('shift')`), joystick por CDP
+  (`Input.dir4` en8 direcciones + soltado), slider a75/150% con arrastre sin
+  drift, reset, persistencia tras reinicio, y prueba real del dash/monedas.

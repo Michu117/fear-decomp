@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.0 — 2026-10-19
+
+- **Shift button** (`keyCode 16`, hold — same channel as a physical key): run with
+  Shift (`Game_Player.isDashButtonPressed` + `TDDP_ManageDashing`) and any other
+  Shift-reading mechanic. Toggleable in the ⚙ menu, repositionable, persisted.
+- **Button size slider** (75–150%) in the ⚙ menu, applied through a single CSS
+  variable (`--fh-sz` wrapped in `calc()`); touch area always equals the visual
+  area; inter-button anchors scale with it; positions re-clamped on change.
+- **D-pad mode: Arrows ↔ Joystick** in the ⚙ menu. The joystick lives in the same
+  container (shared saved position, edit mode and reset):22% dead zone,12°
+  hysteresis,8 sectors of45° (diagonals = two simultaneous keys, MV handles8-way
+  natively), knob follows the finger, releasing frees every direction key.
+- ⚙ panel is now scrollable (more rows than fit on a short landscape viewport).
+- "Restablecer controles" now restores layout (positions + size + direction mode);
+  feature toggles are left untouched.
+- Persistence `fhset_v1` grows `shift`, `sz`, `dpad` keys **with defaults**:
+  v1.0.0 settings keep loading unchanged.
+
 ## 1.0.0 — 2026-10-18 (first public release)
 
 - WebView APK (Java-only, minSdk 26) that runs **your own PC copy** of Fear & Hunger

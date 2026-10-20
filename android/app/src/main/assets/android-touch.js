@@ -10,18 +10,40 @@
  *     keyMapper[84]='t' y dispara el common event 289 al pulsar, SOLO en mapas
  *     de campo (igual que el teclado físico). Semántica de mantener pulsado:
  *     pointerdown→keydown, pointerup→keyup.
+ *   - Botón SHIFT (Fase 7): keyCode 16, semántica de mantener pulsado (igual
+ *     que la antorcha). Verificado en el juego: keyMapper[16]='shift' (MV
+ *     default) y el consumidor principal es el DASH — Game_Player.
+ *     isDashButtonPressed + TDDP_ManageDashing:108 (mantener Shift = correr);
+ *     también leen 'shift' ventanas (confirmar/scroll) y YEP_Options (×10).
+ *     Nadie lee event.shiftKey, así que el evento sintético basta tal cual.
+ *   - Tamaño de botones (Fase 7): slider75–150% en AJUSTES → variable CSS
+ *     --fh-sz envuelta en calc() en cada size inline. Elegimos calc() (no
+ *     transform:scale) para que área de toque = área visual y el arrastre
+ *     no tenga que dividir deltas por la escala. Anclajes de la fila
+ *     B/antorcha/Shift y del ≡ también escalan para no solaparse.
+ *   - D-pad Flechas ↔ Joystick (Fase 7): nodo hermano #fh-joy dentro del
+ *     contenedor #fh-dpad (misma unidad arrastrable y misma posición
+ *     guardada). Zona muerta 22%, histéresis de12°,8 sectores de45°
+ *     (diagonal =2 teclas simultáneas; MV soporta diagonal nativo).
+ *     Soltar el dedo libera TODAS las flechas (red de seguridad).
  *   - Botón ⚙ arriba-derecha → panel AJUSTES (Fase 5):
  *       · Límite de FPS 30/60 (window.__FH_fpsCap — API del shim; antes era
  *         el botón "30" fijo en pantalla, ahora vive SOLO en el menú)
  *       · Contador de FPS en vivo (window.__FH_fps, contado por el batcher
  *         del shim sobre el bucle real) con indicador junto al ⚙
  *       · Botón antorcha Sí/No (ocultarlo si estorba)
+ *       · Botón Shift Sí/No (Fase 7)
+ *       · Tamaño de botones75–150% (Fase 7)
+ *       · Control de dirección: Flechas | Joystick (Fase 7)
  *       · "Reposicionar controles": modo edición con arrastre de
- *         D-pad/A/B/Menú/Antorcha/⚙ (cada pieza se arrastra como unidad)
- *       · "Restablecer posiciones"
+ *         D-pad/A/B/Menú/Antorcha/Shift/⚙ (cada pieza se arrastra como unidad)
+ *       · "Restablecer controles": posiciones + tamaño + modo de dirección
+ *         (los interruptores de features NO se tocan)
  *   - Persistencia en localStorage (origin appassets, igual que los saves):
- *     clave fhset_v1 = { cap, counter, torch, pos:{ grupo:{x,y} } } — x,y en
- *     fracción de pantalla para sobrevivir a cambios de densidad/orientación.
+ *     clave fhset_v1 = { cap, counter, torch, shift, sz, dpad,
+ *     pos:{ grupo:{x,y} } } — x,y en fracción de pantalla para sobrevivir a
+ *     cambios de densidad/orientación. Claves nuevas con defaults: las
+ *     configuraciones guardadas en v1.0.0 siguen cargando sin tocar nada.
  *
  * El panel bloquea toques y teclado al juego mientras está abierto; el juego
  * sigue corriendo detrás (NO congelamos el bucle: TDDP_FluidTimestep castigaría
@@ -79,12 +101,18 @@
   var st = loadSet();                    // ajustes persistentes
   var counterOn = st.counter !== false;  // contador de FPS: ON por defecto
   var torchOn = st.torch !== false;      // botón antorcha: ON por defecto
+  var shOn = st.shift !== false;         // botón Shift: ON por defecto (Fase 7)
+  var szPct = (typeof st.sz === 'number' && st.sz >= 75 && st.sz <= 150)
+              ? st.sz : 100;             // tamaño de botones (Fase 7)
+  var dpadMode = (st.dpad === 'joy') ? 'joy' : 'flechas';  // dirección (Fase 7)
   var edit = false;                      // modo reposición
   var menuOpen = false;
   var drag = null;                       // {id, g, v(elem visual), c(elem captura), dx, dy}
   var G = {};                            // elementos arrastrables por grupo
   var DEF = {};                          // estilo inline original de cada pieza
-  var GRP = ['dpad', 'a', 'b', 'mn', 'tc', 'set'];
+  var GRP = ['dpad', 'a', 'b', 'mn', 'tc', 'sh', 'set'];
+  var arrowsEl = null, joyEl = null, knobEl = null;  // D-pad y joystick (Fase 7)
+  var joySt = { id: null, cx: 0, cy: 0, r: 0, sec: -1 };  // estado del joystick
 
   function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
@@ -134,18 +162,108 @@
     // (right/bottom, o left/bottom del D-pad) existen SOLO inline: si se
     // borran, el elemento absoluto sin anclajes cae a la esquina superior
     // izquierda. (Bug reportado en la Fase 5: reset → todo arriba-izquierda.)
+    // Fase7: el reset restaura LAYOUT completo (posiciones + tamaño + modo de
+    // dirección); los interruptores de features (FPS, contador, antorcha,
+    // Shift visible) se quedan como los dejó el usuario.
     st.pos = {};
+    st.sz = 100;
+    st.dpad = 'flechas';
     saveSet(st);
     GRP.forEach(function (g) {
       var el = G[g];
       if (!el || DEF[g] == null) return;
       el.setAttribute('style', DEF[g]);
     });
+    szPct = 100;
+    applySize(100);                      // --fh-sz + etiqueta + re-clamp
+    dpadMode = 'flechas';
+    applyDpadMode();
+    var szr = segById('fh-szr');
+    if (szr) szr.value = '100';
     applyTorchVis();                     // DEF no debe decidir la visibilidad
-    log('edit: posiciones restablecidas');
+    applyShVis();
+    log('edit: controles restablecidos (posiciones + tamaño + dirección)');
   }
   function applyTorchVis() {
     if (G.tc) G.tc.style.display = torchOn ? '' : 'none';
+  }
+  function applyShVis() {                // visibilidad del botón Shift (Fase 7)
+    if (G.sh) G.sh.style.display = shOn ? '' : 'none';
+  }
+  function applyAllPos() {               // re-aplica posiciones guardadas (con clamp)
+    if (!st.pos) return;
+    GRP.forEach(function (g) {
+      if (st.pos[g] && G[g]) applyPos(G[g], st.pos[g]);
+    });
+  }
+  function applySize(pct) {              // tamaño global de botones (Fase 7)
+    szPct = clamp(pct, 75, 150);
+    var root = document.getElementById('fh-touch');
+    if (root) root.style.setProperty('--fh-sz', String(szPct / 100));
+    applyAllPos();                       // anclar dentro de pantalla con el nuevo tamaño
+    var lbl = segById('fh-szl');
+    if (lbl) lbl.textContent = Math.round(szPct) + '%';
+  }
+  function applyDpadMode() {             // Flechas ↔ Joystick (Fase 7)
+    if (!arrowsEl || !joyEl) return;
+    joyReleaseAll();                     // nunca flechas pegadas al cambiar de modo
+    arrowsEl.style.display = (dpadMode === 'joy') ? 'none' : '';
+    joyEl.style.display = (dpadMode === 'joy') ? '' : 'none';
+  }
+
+  // ---------------- joystick (Fase 7) ----------------
+  // Emula un stick analógico con las MISMAS flechas del teclado:8 sectores
+  // de45° (diagonal =2 teclas a la vez, MV soporta8-direcciones nativo),
+  // zona muerta22% del radio, soltar por debajo del15% (histéresis) y
+  // cambio de sector solo con12° de holgura para no parpadear en los bordes.
+  var DIRS = [37, 38, 39, 40];                     // ← ↑ → ↓
+  var SECTORS = [[39], [39, 38], [38], [37, 38],   // E NE N NW
+                 [37], [37, 40], [40], [39, 40]];  // W  SW S  SE
+  function releaseAllDirs() { DIRS.forEach(release); }
+  function joyReleaseAll() {
+    joySt.sec = -1;
+    releaseAllDirs();
+    if (knobEl) knobEl.style.transform = 'translate(-50%,-50%)';
+  }
+  function angDiff(a, b) {
+    var d = Math.abs(a - b) % 360;
+    return d > 180 ? 360 - d : d;
+  }
+  function joyApply(sec) {
+    if (sec === joySt.sec) return;
+    joySt.sec = sec;
+    var want = {};
+    if (sec >= 0) SECTORS[sec].forEach(function (c) { want[c] = 1; });
+    DIRS.forEach(function (c) { if (want[c]) press(c); else release(c); });
+  }
+  function joyMove(e) {
+    if (joySt.id !== e.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var dx = e.clientX - joySt.cx, dy = e.clientY - joySt.cy;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var maxOff = joySt.r * 0.62;                  // knob clamped dentro de la base
+    var k = dist > maxOff ? maxOff / dist : 1;
+    if (knobEl) knobEl.style.transform =
+      'translate(-50%,-50%) translate(' + (dx * k) + 'px,' + (dy * k) + 'px)';
+    var dead = joySt.r * 0.22, rel = joySt.r * 0.15;
+    if (joySt.sec < 0) {
+      if (dist < dead) return;                    // aún en zona muerta
+    } else if (dist < rel) {
+      joyApply(-1);                               // soltar
+      return;
+    }
+    var ang = Math.atan2(-dy, dx) * 180 / Math.PI; // arriba = +90°
+    var cand = ((Math.round(ang / 45) % 8) + 8) % 8;
+    if (joySt.sec >= 0 && angDiff(ang, joySt.sec * 45) < 22.5 + 12) return; // histéresis
+    joyApply(cand);
+  }
+  function joyEnd(e) {
+    if (joySt.id !== e.pointerId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    joySt.id = null;
+    joyReleaseAll();
   }
 
   // ---------------- botones ----------------
@@ -214,6 +332,12 @@
     paintSeg(segById('fh-cap'), String(window.__FH_fpsCap || 30));
     paintSeg(segById('fh-cnt'), counterOn ? 'on' : 'off');
     paintSeg(segById('fh-tcsw'), torchOn ? 'on' : 'off');
+    paintSeg(segById('fh-shsw'), shOn ? 'on' : 'off');      // Fase 7
+    paintSeg(segById('fh-dpsw'), dpadMode);                 // Fase 7
+    var szr = segById('fh-szr');                            // Fase 7
+    if (szr) szr.value = String(Math.round(szPct));
+    var szl = segById('fh-szl');
+    if (szl) szl.textContent = Math.round(szPct) + '%';
   }
   function startEdit() {
     edit = true;
@@ -266,19 +390,22 @@
       'border:2px solid rgba(255,255,255,.35);color:rgba(255,255,255,.85);font-weight:bold;' +
       'touch-action:none;-webkit-tap-highlight-color:transparent;}' +
       '.fh-down{background:rgba(255,255,255,.32);border-color:rgba(255,255,255,.7);}' +
-      /* indicador de FPS junto al ⚙ */
+      /* indicador de FPS junto al ⚙ (escala con --fh-sz como los botones) */
       '#fh-fcnt{pointer-events:none;position:absolute;display:none;align-items:center;' +
-      'justify-content:center;min-width:min(9vmin,52px);height:min(9vmin,52px);padding:0 10px;' +
+      'justify-content:center;min-width:calc(min(9vmin,52px)*var(--fh-sz,1));' +
+      'height:calc(min(9vmin,52px)*var(--fh-sz,1));padding:0 10px;' +
       'border-radius:999px;background:rgba(18,18,26,.55);' +
       'border:1px solid rgba(255,220,120,.55);color:rgba(255,220,120,.95);' +
-      'font-size:min(4vmin,20px);font-weight:bold;}' +
-      /* panel de ajustes */
+      'font-size:calc(min(4vmin,20px)*var(--fh-sz,1));font-weight:bold;}' +
+      /* panel de ajustes (scrolleable: con las filas de la Fase 7 ya no cabe en452px) */
       '#fh-menu{position:fixed;inset:0;z-index:100000;display:none;flex-direction:column;' +
       'align-items:center;justify-content:center;background:rgba(5,5,9,.82);' +
-      'pointer-events:auto;touch-action:none;font-family:Georgia,"Times New Roman",serif;' +
+      'pointer-events:auto;font-family:Georgia,"Times New Roman",serif;' +
       'user-select:none;-webkit-user-select:none;}' +
       '#fh-menu.fh-on{display:flex;}' +
-      '.fh-panel{width:min(86vw,660px);background:#14121a;border:2px solid #7a6f5a;' +
+      '.fh-panel{width:min(86vw,660px);max-height:94%;overflow-y:auto;' +
+      'overscroll-behavior:contain;touch-action:pan-y;background:#14121a;' +
+      'border:2px solid #7a6f5a;' +
       'border-radius:4px;padding:clamp(14px,3vmin,34px) clamp(16px,4vmin,44px);color:#d8cfb8;' +
       'box-shadow:0 0 26px rgba(0,0,0,.8);}' +
       '.fh-title{text-align:center;font-size:clamp(17px,4.6vmin,40px);letter-spacing:.2em;' +
@@ -292,6 +419,12 @@
       '.fh-seg>div{padding:clamp(6px,1.6vmin,16px) clamp(12px,3.4vmin,34px);color:#a89f88;' +
       'pointer-events:auto;touch-action:none;-webkit-tap-highlight-color:transparent;}' +
       '.fh-seg .fh-act{background:#5a4f3a;color:#ffe9b0;}' +
+      /* slider de tamaño (Fase 7) */
+      '.fh-slider{display:flex;align-items:center;gap:clamp(6px,1.6vmin,16px);flex-shrink:0;}' +
+      '.fh-slider input[type=range]{width:clamp(84px,20vmin,210px);accent-color:#c8a45a;' +
+      'pointer-events:auto;touch-action:pan-y;-webkit-tap-highlight-color:transparent;}' +
+      '.fh-szl{min-width:4ch;text-align:right;color:#a89f88;' +
+      'font-size:clamp(12px,3vmin,24px);}' +
       '.fh-btn{padding:clamp(8px,2vmin,20px) clamp(12px,3vmin,30px);border:1px solid #7a6f5a;' +
       'border-radius:3px;background:#221f18;color:#d8cfb8;text-align:center;' +
       'font-size:clamp(14px,3.4vmin,30px);pointer-events:auto;touch-action:none;' +
@@ -317,34 +450,90 @@
     document.body.appendChild(root);
 
     var S = 'min(11vmin,64px)';            // tamaño botón D-pad
-    var O = 'min(2.5vmin,15px)';           // margen exterior
+    var O = 'min(2.5vmin,15px)';           // margen exterior (NO escala)
+    var SM = 'min(9vmin,52px)';            // botones medianos (antorcha, Shift, ≡, ⚙)
+    var AB = 'min(13vmin,76px)';           // botón A
+    var BGP = 'min(25vmin,146px)';         // anclaje de la fila B/antorcha/Shift
+    var Z = '*var(--fh-sz,1)';             // multiplicador del tamaño global (Fase 7)
     var dp = function (extra) {
-      return 'width:' + S + ';height:' + S + ';font-size:min(5vmin,28px);' + extra;
+      return 'width:calc(' + S + Z + ');height:calc(' + S + Z + ');' +
+             'font-size:calc(min(5vmin,28px)' + Z + ');' + extra;
     };
 
-    // D-pad como contenedor: se arrastra como UNA sola pieza
+    // D-pad como contenedor: se arrastra como UNA sola pieza. Dentro viven
+    // #fh-arrows (las4 flechas) o #fh-joy (stick, Fase 7): se alterna display
+    // según st.dpad compartiendo posición, tamaño y modo edición.
     G.dpad = document.createElement('div');
     G.dpad.id = 'fh-dpad';
     G.dpad.setAttribute('style', 'position:absolute;left:' + O + ';bottom:' + O + ';' +
-      'width:calc(3*' + S + ');height:calc(3*' + S + ');pointer-events:none;');
+      'width:calc(3*' + S + Z + ');height:calc(3*' + S + Z + ');pointer-events:none;');
     root.appendChild(G.dpad);
-    mkBtn(G.dpad, 'fh-up', '▲', 38, 'left:' + S + ';bottom:calc(2*' + S + ');' + dp(''), 'dpad');
-    mkBtn(G.dpad, 'fh-dn', '▼', 40, 'left:' + S + ';bottom:0;' + dp(''), 'dpad');
-    mkBtn(G.dpad, 'fh-lf', '◀', 37, 'left:0;bottom:' + S + ';' + dp(''), 'dpad');
-    mkBtn(G.dpad, 'fh-rt', '▶', 39, 'left:calc(2*' + S + ');bottom:' + S + ';' + dp(''), 'dpad');
 
-    // Botones: A (ok), B (escape), MENÚ (Esc) abajo-derecha
-    var AB = 'min(13vmin,76px)';
+    arrowsEl = document.createElement('div');
+    arrowsEl.id = 'fh-arrows';
+    arrowsEl.setAttribute('style', 'position:absolute;left:0;bottom:0;width:100%;' +
+      'height:100%;pointer-events:none;');
+    G.dpad.appendChild(arrowsEl);
+    mkBtn(arrowsEl, 'fh-up', '▲', 38,
+      'left:calc(' + S + Z + ');bottom:calc(2*' + S + Z + ');' + dp(''), 'dpad');
+    mkBtn(arrowsEl, 'fh-dn', '▼', 40,
+      'left:calc(' + S + Z + ');bottom:0;' + dp(''), 'dpad');
+    mkBtn(arrowsEl, 'fh-lf', '◀', 37,
+      'left:0;bottom:calc(' + S + Z + ');' + dp(''), 'dpad');
+    mkBtn(arrowsEl, 'fh-rt', '▶', 39,
+      'left:calc(2*' + S + Z + ');bottom:calc(' + S + Z + ');' + dp(''), 'dpad');
+
+    // Joystick (Fase 7): misma caja que el D-pad, knob interior que sigue al
+    // dedo. Las flechas salen por el MISMO canal sintético que las flechas
+    // físicas, así que el juego no distingue el origen.
+    joyEl = document.createElement('div');
+    joyEl.id = 'fh-joy';
+    joyEl.setAttribute('style', 'position:absolute;left:0;bottom:0;width:100%;height:100%;' +
+      'border-radius:50%;background:rgba(18,18,26,.40);border:2px solid rgba(255,255,255,.35);' +
+      'pointer-events:auto;touch-action:none;display:none;' +
+      '-webkit-tap-highlight-color:transparent;');
+    knobEl = document.createElement('div');
+    knobEl.id = 'fh-knob';
+    knobEl.setAttribute('style', 'position:absolute;left:50%;top:50%;width:40%;height:40%;' +
+      'border-radius:50%;background:rgba(255,255,255,.55);pointer-events:none;' +
+      'transform:translate(-50%,-50%);');
+    joyEl.appendChild(knobEl);
+    G.dpad.appendChild(joyEl);
+    joyEl.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (edit) { dragStart(e, 'dpad', joyEl); return; }   // modo edición: arrastrar
+      if (joySt.id !== null) return;                       // un solo dedo en el stick
+      try { joyEl.setPointerCapture(e.pointerId); } catch (err) {}
+      var r = joyEl.getBoundingClientRect();
+      joySt.id = e.pointerId;
+      joySt.cx = r.left + r.width / 2;
+      joySt.cy = r.top + r.height / 2;
+      joySt.r = r.width / 2;
+      joyMove(e);                     // toque inicial fuera del centro = caminar ya
+    });
+    joyEl.addEventListener('pointermove', function (e) { dragMove(e, joyEl); });
+    joyEl.addEventListener('pointermove', joyMove);
+    joyEl.addEventListener('pointerup', function (e) { dragEnd(e, joyEl); });
+    joyEl.addEventListener('pointerup', joyEnd);
+    joyEl.addEventListener('pointercancel', function (e) { dragEnd(e, joyEl); });
+    joyEl.addEventListener('pointercancel', joyEnd);
+    joyEl.addEventListener('lostpointercapture', function (e) { dragEnd(e, joyEl); });
+    joyEl.addEventListener('lostpointercapture', joyEnd);
+
+    // Botones: A (ok), B (escape), MENÚ (Esc) abajo-derecha. Anclajes de la
+    // fila escalan con --fh-sz para no solaparse a tamaños grandes.
     G.a = mkBtn(root, 'fh-a', 'A', 90,
-      'right:' + O + ';bottom:' + O + ';width:' + AB + ';height:' + AB +
-      ';font-size:min(6vmin,34px);', 'a');
+      'right:' + O + ';bottom:' + O + ';width:calc(' + AB + Z + ');height:calc(' + AB + Z +
+      ');font-size:calc(min(6vmin,34px)' + Z + ');', 'a');
     G.b = mkBtn(root, 'fh-b', 'B', 88,
-      'right:calc(' + O + ' + min(25vmin,146px));bottom:calc(' + O + ' + min(3vmin,18px))' +
-      ';width:calc(' + AB + ' * .85);height:calc(' + AB + ' * .85);' +
-      'font-size:min(5vmin,28px);', 'b');
+      'right:calc(' + O + ' + ' + BGP + Z + ');bottom:calc(' + O + ' + min(3vmin,18px))' +
+      ';width:calc(' + AB + ' * .85' + Z + ');height:calc(' + AB + ' * .85' + Z + ');' +
+      'font-size:calc(min(5vmin,28px)' + Z + ');', 'b');
     G.mn = mkBtn(root, 'fh-mn', '≡', 27,
-      'right:calc(' + O + ' + min(3vmin,18px));bottom:calc(' + O + ' + min(15vmin,88px))' +
-      ';width:min(9vmin,52px);height:min(9vmin,52px);font-size:min(5vmin,26px);', 'mn');
+      'right:calc(' + O + ' + min(3vmin,18px));bottom:calc(' + O + ' + min(15vmin,88px)' + Z + ')' +
+      ';width:calc(' + SM + Z + ');height:calc(' + SM + Z + ');' +
+      'font-size:calc(min(5vmin,26px)' + Z + ');', 'mn');
 
     // Botón ANTORCHA (Fase 6): keyCode 84 = T → YEP_ButtonCommonEvents → CE 289.
     // Por defecto a la izquierda de la B, en su misma fila (alcance del pulgar
@@ -354,9 +543,23 @@
       '<path fill="currentColor" d="M12 2s6 5.5 6 10a6 6 0 0 1-12 0c0-2.5 1.2-4.6 2.6-6.3' +
       '.3 1.4 1 2.3 1.9 2.8-.6-2.5-.2-4.8 1.5-6.5z"/></svg>',
       84,
-      'right:calc(' + O + ' + min(25vmin,146px) + min(9vmin,52px) + 8px);' +
+      'right:calc(' + O + ' + ' + BGP + Z + ' + ' + SM + Z + ' + 8px);' +
       'bottom:calc(' + O + ' + min(3vmin,18px));' +
-      'width:min(9vmin,52px);height:min(9vmin,52px);', 'tc', true);
+      'width:calc(' + SM + Z + ');height:calc(' + SM + Z + ');', 'tc', true);
+
+    // Botón SHIFT (Fase 7): keyCode16 = Shift → keyMapper[16]='shift' del MV.
+    // Mantener pulsado = correr (Game_Player.isDashButtonPressed +
+    // TDDP_ManageDashing) y la misma señal que lee cualquier otra mecánica
+    // con shift. Icono: flecha+barra (glifo de mayúsculas), SVG monocromo.
+    // Por defecto a la izquierda de la antorcha, en su misma fila.
+    G.sh = mkBtn(root, 'fh-sh',
+      '<svg viewBox="0 0 24 24" width="54%" height="54%">' +
+      '<path fill="currentColor" d="M12 3l7.5 7.5H15V16H9v-5.5H4.5L12 3z' +
+      'M5 18.5h14V21.5H5z"/></svg>',
+      16,
+      'right:calc(' + O + ' + ' + BGP + Z + ' + ' + SM + Z + ' + 8px + ' + SM + Z + ' + 8px);' +
+      'bottom:calc(' + O + ' + min(3vmin,18px));' +
+      'width:calc(' + SM + Z + ');height:calc(' + SM + Z + ');', 'sh', true);
 
     // Botón ⚙ (ajustes) arriba-derecha — antes era el interruptor 30/60
     var set = document.createElement('div');
@@ -364,7 +567,8 @@
     set.className = 'fh-tbtn';
     set.textContent = '\u2699';
     set.setAttribute('style', 'right:' + O + ';top:' + O +
-      ';width:min(9vmin,52px);height:min(9vmin,52px);font-size:min(5vmin,26px);');
+      ';width:calc(' + SM + Z + ');height:calc(' + SM + Z + ');' +
+      'font-size:calc(min(5vmin,26px)' + Z + ');');
     set.addEventListener('pointerdown', function (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -407,8 +611,17 @@
       '<div class="fh-seg" id="fh-cnt"><div data-v="on">S\u00ed</div><div data-v="off">No</div></div></div>' +
       '<div class="fh-row"><span>Bot\u00f3n antorcha</span>' +
       '<div class="fh-seg" id="fh-tcsw"><div data-v="on">S\u00ed</div><div data-v="off">No</div></div></div>' +
+      '<div class="fh-row"><span>Bot\u00f3n Shift</span>' +
+      '<div class="fh-seg" id="fh-shsw"><div data-v="on">S\u00ed</div><div data-v="off">No</div></div></div>' +
+      '<div class="fh-row"><span>Tama\u00f1o de botones</span>' +
+      '<div class="fh-slider"><input type="range" id="fh-szr" min="75" max="150" step="5" ' +
+      'value="' + Math.round(szPct) + '"><span class="fh-szl" id="fh-szl">' +
+      Math.round(szPct) + '%</span></div></div>' +
+      '<div class="fh-row"><span>Control de direcci\u00f3n</span>' +
+      '<div class="fh-seg" id="fh-dpsw"><div data-v="flechas">Flechas</div>' +
+      '<div data-v="joy">Joystick</div></div></div>' +
       '<div class="fh-btn fh-wide" id="fh-repos">Reposicionar controles</div>' +
-      '<div class="fh-btn fh-wide" id="fh-reset">Restablecer posiciones</div>' +
+      '<div class="fh-btn fh-wide" id="fh-reset">Restablecer controles</div>' +
       '<div class="fh-btn fh-wide" id="fh-close">Cerrar</div>' +
       '<div class="fh-hint">El juego sigue activo detr\u00e1s de este men\u00fa; ' +
       'los controles quedan bloqueados hasta cerrarlo.</div>' +
@@ -442,6 +655,31 @@
       applyTorchVis();
       log('menu: botón antorcha = ' + v);
     });
+    bindSeg('fh-shsw', function (v) {          // Fase 7: visibilidad del Shift
+      shOn = (v === 'on');
+      st.shift = shOn;
+      saveSet(st);
+      applyShVis();
+      log('menu: botón shift = ' + v);
+    });
+    bindSeg('fh-dpsw', function (v) {          // Fase 7: Flechas ↔ Joystick
+      dpadMode = (v === 'joy') ? 'joy' : 'flechas';
+      st.dpad = dpadMode;
+      saveSet(st);
+      applyDpadMode();
+      log('menu: control de dirección = ' + v);
+    });
+    var szr = segById('fh-szr');               // Fase 7: slider de tamaño
+    if (szr) {
+      szr.addEventListener('input', function () {
+        applySize(Number(szr.value));
+      });
+      szr.addEventListener('change', function () {
+        st.sz = Math.round(Number(szr.value));
+        saveSet(st);
+        log('menu: tamaño de botones = ' + st.sz + '%');
+      });
+    }
     bindCmd('fh-repos', function () { closeMenu(); startEdit(); });
     bindCmd('fh-reset', function () { resetPos(); paintMenu(); });
     bindCmd('fh-close', function () { closeMenu(); });
@@ -468,16 +706,16 @@
       if (G[g]) DEF[g] = G[g].getAttribute('style');
     });
 
-    // Posiciones guardadas (Fase 5) → aplicar
-    if (st.pos) {
-      GRP.forEach(function (g) {
-        if (st.pos[g] && G[g]) applyPos(G[g], st.pos[g]);
-      });
-    }
+    // Tamaño global activo ANTES de medir/anclar (Fase 7)
+    applySize(szPct);
+    // Posiciones guardadas (Fase 5) → aplicar con el tamaño ya correcto
+    applyAllPos();
     applyTorchVis();                     // tras DEF y applyPos (si el usuario lo ocultó)
+    applyShVis();
+    applyDpadMode();                     // Flechas o Joystick según st.dpad
     paintMenu();
 
-    log('touch: controles táctiles activos (D-pad + A/B/Menú/Antorcha + Ajustes ⚙)');
+    log('touch: controles activos (D-pad/Joystick + A/B/Menú/Antorcha/Shift + Ajustes ⚙)');
   }
 
   if (document.readyState === 'loading') {
