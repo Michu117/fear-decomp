@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UI strings of the port (English = default). The game's own text is NOT here. -->
+<resources>
+    <string name="setup_title">Fear &amp; Hunger — Android port</string>
+    <string name="pick_folder">Select game folder (Steam)</string>
+    <string name="intro">Pick the \"Fear &amp; Hunger\" folder from your Steam copy.\nThe app validates your copy and prepares it to play. Nothing is sent to any server.</string>
+    <string name="already_extracted">Copy already extracted. Opening the game…</string>
+    <string name="validating">Validating your copy…</string>
+    <string name="valid_extracting">Valid copy (versionId %1$s). Extracting…</string>
+    <string name="extracting_progress">Extracting… %1$d files (%2$d MB)</string>
+    <string name="done_opening">Done (%1$d files, %2$d MB, %3$d PC saves imported). Opening the game…</string>
+    <string name="error_prefix">Error: %1$s</string>
+    <string name="err_open_folder">Could not open the selected folder.</string>
+    <string name="err_not_fh">This does not look like a Fear &amp; Hunger copy (package.json or www/ missing).</string>
+    <string name="err_bad_package">Invalid package.json (does not reference www/index.html).</string>
+    <string name="err_missing_core">data/System.json or js/rpg_core.js is missing.</string>
+    <string name="err_version">Unsupported copy version (versionId != %1$s).</string>
+    <string name="err_not_mv">Not RPG Maker MV 1.6.0.</string>
+    <string name="err_mkdir">Could not create the game directory.</string>
+    <string name="err_write">Error writing %1$s: %2$s</string>
+    <string name="err_extract">Error extracting the game files.</string>
+    <string name="err_index">Unexpected index.html (reference to %1$s not found).</string>
+</resources>

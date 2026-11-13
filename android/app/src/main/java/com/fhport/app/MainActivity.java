@@ -1,7 +1,9 @@
 package com.fhport.app;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -19,6 +21,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -46,6 +49,24 @@ public class MainActivity extends Activity {
     private Button pickButton;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
+    /**
+     * Idioma de la UI propia del port (no del juego). Prefs "lang" lo escribe
+     * el menú ⚙ (FHBridge.setLang); si no hay elección se usa el del sistema
+     * y los recursos caen a values/ (inglés) para idiomas sin traducir.
+     */
+    static Context localize(Context base) {
+        String lang = base.getSharedPreferences("fhport", MODE_PRIVATE).getString("lang", null);
+        if (lang == null || lang.isEmpty()) return base;
+        Configuration c = new Configuration(base.getResources().getConfiguration());
+        c.setLocale(new Locale(lang));
+        return base.createConfigurationContext(c);
+    }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(localize(base));
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -57,7 +78,7 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(Color.parseColor("#101014"));
 
         TextView title = new TextView(this);
-        title.setText("Fear & Hunger — Port PoC");
+        title.setText(getString(R.string.setup_title));
         title.setTextColor(Color.parseColor("#e8d9b0"));
         title.setTextSize(22);
         root.addView(title);
@@ -76,7 +97,7 @@ public class MainActivity extends Activity {
         root.addView(progressBar);
 
         pickButton = new Button(this);
-        pickButton.setText("Seleccionar carpeta del juego (Steam)");
+        pickButton.setText(getString(R.string.pick_folder));
         pickButton.setOnClickListener(v -> pickFolder());
         root.addView(pickButton);
 
@@ -84,14 +105,11 @@ public class MainActivity extends Activity {
 
         File marker = new File(getFilesDir(), GAME_DIR + "/" + VALIDATED_MARKER);
         if (marker.exists()) {
-            statusView.setText("Copia ya extraída. Abriendo el juego…");
+            statusView.setText(getString(R.string.already_extracted));
             refreshRuntime();
             launchGame();
         } else {
-            statusView.setText(
-                    "Elige la carpeta \"Fear & Hunger\" de tu Steam.\n" +
-                    "La app valida tu copia y la prepara para jugar. " +
-                    "No se envía nada a ningún servidor.");
+            statusView.setText(getString(R.string.intro));
         }
     }
 
@@ -126,39 +144,39 @@ public class MainActivity extends Activity {
     private void validateAndExtract(Uri tree) {
         DocumentFile root = DocumentFile.fromTreeUri(this, tree);
         if (root == null || !root.isDirectory()) {
-            fail("No se pudo abrir la carpeta seleccionada.");
+            fail(getString(R.string.err_open_folder));
             return;
         }
-        setStatus("Validando la copia…");
+        setStatus(getString(R.string.validating));
 
         DocumentFile pkg = root.findFile("package.json");
         DocumentFile www = root.findFile("www");
         if (pkg == null || www == null || !www.isDirectory()) {
-            fail("No parece una copia de Fear & Hunger (falta package.json o www/).");
+            fail(getString(R.string.err_not_fh));
             return;
         }
         String pkgText = readText(pkg);
         if (pkgText == null || !pkgText.contains("www/index.html")) {
-            fail("package.json inválido (no referencia www/index.html).");
+            fail(getString(R.string.err_bad_package));
             return;
         }
         DocumentFile sysJson = findPath(www, "data", "System.json");
         DocumentFile rpgCore = findPath(www, "js", "rpg_core.js");
         if (sysJson == null || rpgCore == null) {
-            fail("Faltan data/System.json o js/rpg_core.js.");
+            fail(getString(R.string.err_missing_core));
             return;
         }
         String sysText = readText(sysJson);
         String coreText = readText(rpgCore);
         if (sysText == null || !sysText.contains(EXPECTED_VERSION_ID)) {
-            fail("Versión de copia no soportada (versionId != " + EXPECTED_VERSION_ID + ").");
+            fail(getString(R.string.err_version, EXPECTED_VERSION_ID));
             return;
         }
         if (coreText == null || !coreText.contains("rpg_core.js v1.6.0")) {
-            fail("No es RPG Maker MV 1.6.0.");
+            fail(getString(R.string.err_not_mv));
             return;
         }
-        setStatus("Copia válida (versionId " + EXPECTED_VERSION_ID + "). Extrayendo…");
+        setStatus(getString(R.string.valid_extracting, EXPECTED_VERSION_ID));
         // La extracción SAF puede tardar varios minutos: evitar que apague
         // la pantalla y ralentice (o interrumpa) la copia. (getWindow toca la
         // vista: validateAndExtract corre en hilo de pool → runOnUiThread.)
@@ -170,7 +188,7 @@ public class MainActivity extends Activity {
         File gameDir = new File(getFilesDir(), GAME_DIR);
         File wwwOut = new File(gameDir, "www");
         if (!wwwOut.mkdirs() && !wwwOut.isDirectory()) {
-            fail("No se pudo crear el directorio del juego.");
+            fail(getString(R.string.err_mkdir));
             return;
         }
 
@@ -179,7 +197,7 @@ public class MainActivity extends Activity {
             byte[] shim = readAsset("shim-nw.js");
             writeBytes(new File(wwwOut, "shim-nw.js"), shim);
         } catch (Exception e) {
-            fail("Error escribiendo shim-nw.js: " + e);
+            fail(getString(R.string.err_write, "shim-nw.js", String.valueOf(e)));
             return;
         }
 
@@ -189,7 +207,7 @@ public class MainActivity extends Activity {
             byte[] compat = readAsset("android-compat.js");
             writeBytes(new File(wwwOut, "android-compat.js"), compat);
         } catch (Exception e) {
-            fail("Error escribiendo android-compat.js: " + e);
+            fail(getString(R.string.err_write, "android-compat.js", String.valueOf(e)));
             return;
         }
 
@@ -198,7 +216,7 @@ public class MainActivity extends Activity {
             byte[] touch = readAsset("android-touch.js");
             writeBytes(new File(wwwOut, "android-touch.js"), touch);
         } catch (Exception e) {
-            fail("Error escribiendo android-touch.js: " + e);
+            fail(getString(R.string.err_write, "android-touch.js", String.valueOf(e)));
             return;
         }
 
@@ -207,7 +225,7 @@ public class MainActivity extends Activity {
         // filesDir/game/www; copiar el propio dir "www" anidaba www/www).
         for (DocumentFile child : www.listFiles()) {
             if (!copyTree(child, wwwOut, counters)) {
-                fail("Error extrayendo los archivos del juego.");
+                fail(getString(R.string.err_extract));
                 return;
             }
         }
@@ -224,7 +242,7 @@ public class MainActivity extends Activity {
                                 + marker);
                 writeTextFile(indexOut, index);
             } else {
-                fail("index.html inesperado (no se encontró la referencia a pixi.js).");
+                fail(getString(R.string.err_index, "pixi.js"));
                 return;
             }
         }
@@ -243,7 +261,7 @@ public class MainActivity extends Activity {
                                 + "src=\"android-touch.js\"></script>");
                 writeTextFile(indexOut, index);
             } else {
-                fail("index.html inesperado (no se encontró la referencia a main.js).");
+                fail(getString(R.string.err_index, "main.js"));
                 return;
             }
         }
@@ -275,9 +293,8 @@ public class MainActivity extends Activity {
 
         final int finalSaves = saves;
         runOnUiThread(() -> {
-            status.setTextPlaceholder("Listo (" + counters[0] + " archivos, "
-                    + (counters[1] / (1024 * 1024)) + " MB, "
-                    + finalSaves + " saves PC importados). Abriendo el juego…");
+            status.setTextPlaceholder(getString(R.string.done_opening,
+                    (int) counters[0], (int) (counters[1] / (1024 * 1024)), finalSaves));
             launchGame();
         });
     }
@@ -318,8 +335,9 @@ public class MainActivity extends Activity {
                 counters[0]++;
                 if (counters[0] % 200 == 0) {
                     final long mb = counters[1] / (1024 * 1024);
+                    final int files = (int) counters[0];
                     runOnUiThread(() -> status.setTextPlaceholder(
-                            "Extrayendo… " + counters[0] + " archivos (" + mb + " MB)"));
+                            getString(R.string.extracting_progress, files, (int) mb)));
                 }
                 return true;
             } catch (Exception e) {
@@ -337,7 +355,7 @@ public class MainActivity extends Activity {
     private void setStatus(String s) { runOnUiThread(() -> statusView.setText(s)); }
     private void fail(String s) {
         runOnUiThread(() -> {
-            statusView.setText("Error: " + s);
+            statusView.setText(getString(R.string.error_prefix, s));
             progressBar.setVisibility(ProgressBar.GONE);
             pickButton.setEnabled(true);
         });

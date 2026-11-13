@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_title">Fear &amp; Hunger — port Android</string>
+    <string name="pick_folder">Seleccionar carpeta del juego (Steam)</string>
+    <string name="intro">Elige la carpeta \"Fear &amp; Hunger\" de tu Steam.\nLa app valida tu copia y la prepara para jugar. No se envía nada a ningún servidor.</string>
+    <string name="already_extracted">Copia ya extraída. Abriendo el juego…</string>
+    <string name="validating">Validando la copia…</string>
+    <string name="valid_extracting">Copia válida (versionId %1$s). Extrayendo…</string>
+    <string name="extracting_progress">Extrayendo… %1$d archivos (%2$d MB)</string>
+    <string name="done_opening">Listo (%1$d archivos, %2$d MB, %3$d saves PC importados). Abriendo el juego…</string>
+    <string name="error_prefix">Error: %1$s</string>
+    <string name="err_open_folder">No se pudo abrir la carpeta seleccionada.</string>
+    <string name="err_not_fh">No parece una copia de Fear &amp; Hunger (falta package.json o www/).</string>
+    <string name="err_bad_package">package.json inválido (no referencia www/index.html).</string>
+    <string name="err_missing_core">Faltan data/System.json o js/rpg_core.js.</string>
+    <string name="err_version">Versión de copia no soportada (versionId != %1$s).</string>
+    <string name="err_not_mv">No es RPG Maker MV 1.6.0.</string>
+    <string name="err_mkdir">No se pudo crear el directorio del juego.</string>
+    <string name="err_write">Error escribiendo %1$s: %2$s</string>
+    <string name="err_extract">Error extrayendo los archivos del juego.</string>
+    <string name="err_index">index.html inesperado (no se encontró la referencia a %1$s).</string>
+</resources>

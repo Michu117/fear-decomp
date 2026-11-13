@@ -63,7 +63,16 @@ public class GameActivity extends Activity {
         s.setAllowFileAccess(false);           // todo pasa por el asset loader
         s.setAllowContentAccess(false);
         webView.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
-        WebView.setWebContentsDebuggingEnabled(true);
+        // Depuración remota (chrome://inspect) y logs SOLO en builds debug.
+        WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG);
+        // En release la consola JS del juego no se copia a logcat:
+        // devolver true = mensaje consumido.
+        webView.setWebChromeClient(new android.webkit.WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(android.webkit.ConsoleMessage m) {
+                return !BuildConfig.DEBUG;
+            }
+        });
 
         final File wwwRoot = new File(getFilesDir(), MainActivity.GAME_DIR + "/www");
 
@@ -80,10 +89,30 @@ public class GameActivity extends Activity {
             }
         });
 
+        final WebView hapticView = webView;
         webView.addJavascriptInterface(new Object() {
             @android.webkit.JavascriptInterface
             public void log(String msg) {
-                android.util.Log.i("FH-PORT", msg);
+                if (BuildConfig.DEBUG) android.util.Log.i("FH-PORT", msg);
+            }
+
+            /** Idioma de la UI propia elegido en el menú ⚙ (lo lee MainActivity). */
+            @android.webkit.JavascriptInterface
+            public void setLang(String lang) {
+                getSharedPreferences("fhport", MODE_PRIVATE).edit()
+                        .putString("lang", lang == null ? "" : lang).apply();
+            }
+
+            /** Vibración corta al pulsar un control táctil (sin permiso VIBRATE). */
+            @android.webkit.JavascriptInterface
+            public void haptic() {
+                hapticView.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        hapticView.performHapticFeedback(
+                                android.view.HapticFeedbackConstants.VIRTUAL_KEY);
+                    }
+                });
             }
         }, "FHBridge");
 
@@ -168,7 +197,9 @@ public class GameActivity extends Activity {
         if (js.length() > 0) {
             final String script = js.toString();
             runOnUiThread(() -> webView.evaluateJavascript(script, value -> {
-                android.util.Log.i("FH-PORT", "saves importados a localStorage: " + value);
+                if (BuildConfig.DEBUG) {
+                    android.util.Log.i("FH-PORT", "saves importados a localStorage: " + value);
+                }
                 try {
                     importedMarker.createNewFile();
                 } catch (Exception ignored) {

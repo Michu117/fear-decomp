@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 740" width="1280" height="740" role="img" aria-label="Touch controls layout / Distribución de controles táctiles">
+  <!-- Original schematic for the README (no game assets): default layout of the port's touch overlay -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f0c14"/>
+      <stop offset="100%" stop-color="#07060a"/>
+    </linearGradient>
+    <radialGradient id="scene" cx="50%" cy="45%" r="65%">
+      <stop offset="0%" stop-color="#2a2131"/>
+      <stop offset="60%" stop-color="#15111b"/>
+      <stop offset="100%" stop-color="#09080c"/>
+    </radialGradient>
+    <radialGradient id="torchlight" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff9a3a" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#ff9a3a" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="bricks" width="60" height="30" patternUnits="userSpaceOnUse">
+      <path d="M0 0H60M0 15H60M0 0V15M30 15V30" stroke="#ffffff" stroke-opacity="0.035" fill="none"/>
+    </pattern>
+    <clipPath id="scr"><rect x="190" y="140" width="900" height="415" rx="10"/></clipPath>
+  </defs>
+
+  <rect width="1280" height="740" rx="18" fill="url(#bg)"/>
+
+  <!-- phone body -->
+  <rect x="160" y="112" width="960" height="471" rx="46" fill="#1b1a20" stroke="#3b3844" stroke-width="3"/>
+  <circle cx="176" cy="347" r="5" fill="#2c2a33"/>
+
+  <!-- screen -->
+  <g clip-path="url(#scr)">
+    <rect x="190" y="140" width="900" height="415" fill="url(#scene)"/>
+    <rect x="190" y="140" width="900" height="415" fill="url(#bricks)"/>
+    <circle cx="640" cy="350" r="190" fill="url(#torchlight)">
+      <animate attributeName="r" values="180;200;175;195;180" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="640" y="345" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="22" fill="#8a8272" fill-opacity="0.75">your game runs here</text>
+    <text x="640" y="375" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="20" fill="#8a8272" fill-opacity="0.55">tu juego corre aquí</text>
+  </g>
+
+  <!-- overlay controls -->
+  <g fill="#12121a" fill-opacity="0.75" stroke="#ffffff" stroke-opacity="0.45" stroke-width="2.5" font-family="Arial, Helvetica, sans-serif" font-weight="bold">
+    <!-- D-pad -->
+    <circle cx="268" cy="435" r="23"/><circle cx="268" cy="527" r="23"/>
+    <circle cx="222" cy="481" r="23"/><circle cx="314" cy="481" r="23"/>
+    <!-- Shift / torch / B / A / menu / settings -->
+    <circle cx="856" cy="518" r="19"/>
+    <circle cx="903" cy="518" r="19"/>
+    <circle cx="953" cy="514" r="23"/>
+    <circle cx="1052" cy="523" r="27"/>
+    <circle cx="1048" cy="465" r="19"/>
+    <circle cx="1061" cy="174" r="19"/>
+    <rect x="990" y="156" width="46" height="36" rx="18" stroke="#ffdc78" stroke-opacity="0.6" stroke-width="1.5"/>
+  </g>
+  <g fill="#ffffff" fill-opacity="0.88" font-family="Arial, Helvetica, sans-serif" font-weight="bold" text-anchor="middle">
+    <text x="268" y="442" font-size="18">▲</text><text x="268" y="534" font-size="18">▼</text>
+    <text x="222" y="487" font-size="16">◀</text><text x="314" y="487" font-size="16">▶</text>
+    <text x="953" y="522" font-size="22">B</text>
+    <text x="1052" y="532" font-size="26">A</text>
+    <text x="1048" y="472" font-size="20">≡</text>
+    <text x="1061" y="181" font-size="20">⚙</text>
+    <text x="1013" y="181" font-size="17" fill="#ffdc78">60</text>
+  </g>
+  <!-- shift arrow + flame glyphs -->
+  <path d="M856 506l9 9h-5v7h-8v-7h-5z M848 525h16v3h-16z" fill="#ffffff" fill-opacity="0.88"/>
+  <path d="M903 505s8 7 8 13a8 8 0 0 1-16 0c0-3.3 1.6-6 3.4-8.2.4 1.8 1.3 3 2.5 3.7-.8-3.3-.3-6.3 2.1-8.5z" fill="#ffb52e"/>
+
+  <!-- callouts -->
+  <g stroke="#c9a76a" stroke-opacity="0.75" stroke-width="1.5" fill="none" stroke-dasharray="4 4">
+    <path d="M268 552V628"/>
+    <path d="M856 539L700 628"/>
+    <path d="M903 539L880 628"/>
+    <path d="M953 539L1060 628"/>
+    <path d="M1081 523H1135"/>
+    <path d="M1069 455L1135 425"/>
+    <path d="M1082 174H1135"/>
+    <path d="M1013 154V92"/>
+  </g>
+  <g font-family="Georgia, 'Times New Roman', serif" font-size="21" fill="#e8d9b0">
+    <text x="268" y="656" text-anchor="middle">Move · Moverse</text>
+    <text x="268" y="682" text-anchor="middle" font-size="16" fill="#a89f88">arrows or joystick · flechas o joystick</text>
+
+    <text x="700" y="656" text-anchor="middle">Shift — actions</text>
+    <text x="700" y="682" text-anchor="middle" font-size="16" fill="#a89f88">acciones especiales</text>
+
+    <text x="880" y="656" text-anchor="middle">Torch (T)</text>
+    <text x="880" y="682" text-anchor="middle" font-size="16" fill="#a89f88">antorcha</text>
+
+    <text x="1060" y="656" text-anchor="middle">B — cancel</text>
+    <text x="1060" y="682" text-anchor="middle" font-size="16" fill="#a89f88">cancelar</text>
+
+    <text x="1142" y="520">A — OK</text>
+    <text x="1142" y="544" font-size="16" fill="#a89f88">confirmar</text>
+
+    <text x="1142" y="422">Menu</text>
+    <text x="1142" y="446" font-size="16" fill="#a89f88">menú</text>
+
+    <text x="1142" y="171">Settings</text>
+    <text x="1142" y="195" font-size="16" fill="#a89f88">ajustes</text>
+
+    <text x="1013" y="58" text-anchor="middle">FPS counter</text>
+    <text x="1013" y="82" text-anchor="middle" font-size="16" fill="#a89f88">contador de FPS</text>
+  </g>
+
+  <!-- footer note -->
+  <text x="40" y="58" font-family="Georgia, serif" font-size="26" letter-spacing="4" fill="#e8d9b0">CONTROLS · CONTROLES</text>
+  <text x="40" y="88" font-family="Georgia, serif" font-size="17" fill="#a89f88" font-style="italic">Every control can be moved and resized · Cada control se puede mover y redimensionar</text>
+</svg>

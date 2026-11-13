@@ -14,9 +14,18 @@ android {
         versionName "1.1.0"
     }
 
+    buildFeatures {
+        buildConfig true          // BuildConfig.DEBUG: logs y depuración solo en debug
+    }
+
     buildTypes {
+        // Versión para usuarios: sin logs, sin depuración remota del WebView,
+        // no depurable. Firmada con la misma clave que las versiones anteriores
+        // para que se pueda actualizar encima sin desinstalar (y sin perder
+        // partidas). Compilar con: gradle assembleRelease
         release {
             minifyEnabled false
+            signingConfig signingConfigs.debug
         }
     }
 

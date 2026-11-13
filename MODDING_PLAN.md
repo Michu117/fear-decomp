@@ -344,25 +344,38 @@ redimensionar botones y alternar D-pad tipo flechas / tipo joystick.
 - `Input._onKeyDown` (`rpg_core.js:3234`) no filtra: cualquier `keydown` con
   `keyCode 16` → `keyMapper[16]='shift'` (default MV, reforzado por
   `AS_InputSettings`/`YEP_KeyboardConfig`) → `_currentState['shift']=true`.
-- Consumidores: `Game_Player.isDashButtonPressed` (`rpg_objects.js:7693`, correr),
-  `TDDP_ManageDashing.js:108`, `rpg_windows.js` (confirm/scroll),
+- Consumidores: `Game_Player.isDashButtonPressed` (`rpg_objects.js:7693`) y
+  `TDDP_ManageDashing.js:108` — **sin efecto en este juego**: `plugins.js` fija
+  `"Force Dashing":"true"` (siempre corre, Shift no cambia la velocidad);
+  `rpg_windows.js` (avance rápido de texto, teclado de nombres),
   `YEP_Options` (×10). **Nadie lee `event.shiftKey`** → el evento sintético basta.
-- No hay scripts de eventos en `data/Map*.json` usando `'shift'` → no hay segundo
-  canal oculto; todo pasa por `Input`.
+- **Corrección (2026-11-13):** los mapas SÍ usan Shift, vía condiciones de evento
+  `code 111` tipo 11 `"shift"` (no scripts): con Shift pulsado al interactuar se
+  evalúa la puñalada por la espalda (CE 151 `BACKSTAB_OK?`, switch 1044) y
+  acciones con arco (switch 299 `Player_whileBow_used`). También pasa por `Input`,
+  así que el evento sintético basta.
 
 ### Implementación (todo en `android-touch.js`, cero Java)
 - **Shift** (`G.sh`, grupo `sh`): keyCode 16, semántica de hold idéntica a la
   antorcha (patrón ya probado). Icono SVG flecha+barra (`currentColor`). Por
   defecto a la izquierda de la antorcha. Menú: "Botón Shift" Sí/No (`#fh-shsw`,
   `st.shift`, default ON), `applyShVis` después de DEF/applyPos igual que la antorcha.
-- **Tamaño** (75–150%, paso 5): variable CSS `--fh-sz` en `#fh-touch`; TODOS los
-  tamaños fuentes de los inline styles pasan a `calc(<size>*var(--fh-sz,1))` (y
-  las posiciones relativas del D-pad y los anclajes de la fila B/antorcha/Shift y
-  del ≡ también escalan, para que a150% no se solapen). Slider en menú
-  (`#fh-szr` + etiqueta `#fh-szl`), persiste `st.sz`. `applySize` re-ancla con
-  `applyPos` (clamp) tras cada cambio. **Elegimos `calc()` en vez de
-  `transform:scale`**: el área de toque = área visual y el arrastre no necesita
-  dividir deltas por la escala (evita el bug de drift en modo edición).
+- **Tamaño por control** (60–180%): `--fh-sz` pasó de global (`#fh-touch`) a
+  seteada POR ELEMENTO — TODOS los tamaños fuentes de los inline styles son
+  `calc(<size>*var(--fh-sz,1))` (fallback `1` = tamaño original), y las
+  posiciones relativas del D-pad y los anclajes de la fila B/antorcha/Shift y
+  del ≡ escalan con la misma variable (herencia CSS en el contenedor del D-pad)
+  para no solaparse a tamaños grandes. **Gesto**: en modo Reposicionar, 1 dedo
+  = mover (dragStart/dragEnd existentes envueltos por `editDown/editMove/editUp`);
+  al plantar el 2.º dedo en el MISMO grupo se cancela el arrastre y empieza el
+  pellizco (`pin = {g, d0, s0}`, escala = distancia/d0 · s0, clamp 0.6–1.8,
+  etiqueta en vivo `#fh-pinlbl`); soltar cualquier dedo guarda
+  `st.sizes[g]` (2 decimales), el dedo restante NO retoma el arrastre.
+  **Elegimos `calc()` en vez de `transform:scale`**: el área de toque = área
+  visual y el arrastre no necesita dividir deltas por la escala (evita el bug
+  de drift en modo edición). Nota: el slider global75–150% del primer
+  prototipo se QUITÓ en favor del individual (decisión del usuario; v1.1.0
+  aún no publicada, se refineó antes del release).
 - **Joystick** (`#fh-joy` dentro de `G.dpad`, hermano de `#fh-arrows`): alterna
   `display` según `st.dpad` ('flechas' | 'joy') compartiendo posición guardada,
   unidad de arrastre y outline de edición. Knob al40% siguiendo al dedo
@@ -371,20 +384,24 @@ redimensionar botones y alternar D-pad tipo flechas / tipo joystick.
  8-direcciones). Usa los MISMOS `press/release` que las flechas → mismo canal
   sintético. `pointerup/cancel/lostpointercapture` → `joyReleaseAll()` (nunca
   flecha pegada); también al cambiar de modo y en reset.
-- **Menú**: +3 filas (Shift, slider tamaño, dirección) → el panel creció más allá
-  de los452 px CSS del viewport apaisado → `.fh-panel` ahora `max-height:94%;
-  overflow-y:auto` con `touch-action:pan-y` (quito `touch-action:none` del
-  `#fh-menu`, que bloqueaba el scroll táctil por intersección con ancestros).
-- **Reset** ampliado a "Restablecer controles": posiciones + tamaño100% + modo
-  flechas; los toggles de features (FPS, contador, antorcha/Shift visibles) no se
-  tocan.
-- **Persistencia**: `fhset_v1` += `shift`, `sz`, `dpad` con defaults → la config
-  v1.0.0 del usuario (cap60, contador ON) carga sin cambios.
+- **Menú**: +2 filas (Shift, dirección) + hint de pellizco → el panel creció más
+  allá de los452 px CSS del viewport apaisado → `.fh-panel` ahora
+  `max-height:94%; overflow-y:auto` con `touch-action:pan-y` (quito
+  `touch-action:none` del `#fh-menu`, que bloqueaba el scroll táctil por
+  intersección con ancestros).
+- **Reset** ampliado a "Restablecer controles": posiciones + tamaños
+  individuales (100%) + modo flechas; los toggles de features (FPS, contador,
+  antorcha/Shift visibles) no se tocan.
+- **Persistencia**: `fhset_v1` += `shift`, `sizes` (mapa por grupo),
+  `dpad` con defaults → la config v1.0.0 del usuario (cap60, contador ON)
+  carga sin cambios.
 
 ### Estado
 - Implementado y compilado (versionCode 2 / versionName 1.1.0). Sintaxis OK
-  (`node --check`).
-- **Pendiente**: verificación en el Galaxy A56 (el usuario conecta el teléfono
-  cuando pueda): Shift por CDP (`Input.isPressed('shift')`), joystick por CDP
-  (`Input.dir4` en8 direcciones + soltado), slider a75/150% con arrastre sin
-  drift, reset, persistencia tras reinicio, y prueba real del dash/monedas.
+  (`node --check`). El usuario ya verificó en el teléfono el prototipo con
+  slider global ("funcionó") y pidió tamaño individual → rediseño a pellizco
+  por control (sección Tamaño arriba).
+- **Pendiente**: re-verificación en el Galaxy A56 tras el rediseño: Shift por
+  CDP (`Input.isPressed('shift')`), joystick por CDP (`Input.dir4` en8
+  direcciones + soltado), pellizco sintético por CDP (`--fh-sz` por elemento +
+  persistencia en `st.sizes` + reset), y prueba real del dash/monedas.
